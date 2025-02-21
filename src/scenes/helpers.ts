@@ -10,7 +10,8 @@ export const REELS_ROWS = 3;
 export const WINNING_ROW = 1;
 
 export const MINIMUM_WIN_AMOUNT = 3;
-export const SPIN_START_DELAY = 500;
+export const SPIN_START_DELAY = 1500;
+
 export const TWEEN_DURATION = 100;
 export const SPIN_START_DURATION = 2000;
 

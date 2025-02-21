@@ -29,7 +29,8 @@ export class Game extends Phaser.Scene {
 
   preload() {
     this.load.image("background", "assets/bg.png");
-    this.load.image("spinButton", "assets/logo.png");
+    this.load.image("spinButton", "assets/SpinButton_01.png");
+    this.load.image("spinButtonPressed", "assets/SpinButton_01_Pressed.png");
 
     SYMBOLS.forEach((symbol) => {
       this.load.image(symbol, `assets/symbol/${symbol}.png`);
@@ -39,25 +40,42 @@ export class Game extends Phaser.Scene {
       );
     });
   }
-
   create() {
     const { width, height } = this.cameras.main;
+
     const background = this.add.image(width / 2, height / 2, "background");
     background.setDisplaySize(width, height);
 
+    this.createReels(width, height);
+    this.createUiElements(width, height);
+  }
+  private createUiElements(width: number, height: number) {
     this.winText = this.add
-      .text(width / 2, 20, "", { fontSize: "32px", color: "#FFF" })
+      .text(width / 2, 20, "", { fontSize: "48px", color: "#FFF" })
       .setOrigin(0.5)
       .setDepth(1000);
 
+    this.spinButton = this.add
+      .image(width / 2, height / 2, "spinButton")
+      .setInteractive({ useHandCursor: true })
+      .on("pointerdown", () => {
+        this.spinButton.setTexture("spinButtonPressed");
+      })
+      .on("pointerup", () => {
+        this.spinButton.setTexture("spinButton");
+        this.spinReels();
+      })
+      .on("pointerout", () => {
+        this.spinButton.setTexture("spinButton");
+      });
+  }
+  private createReels(width: number, height: number) {
     const totalReelWidth =
       REELS_COLUMNS * IMAGE_WIDTH + (REELS_COLUMNS - 1) * H_GAP;
     const totalReelHeight =
       REELS_ROWS * IMAGE_HEIGHT + (REELS_ROWS - 1) * V_GAP;
-    const startX =
-      (this.cameras.main.width - totalReelWidth) / 2 + IMAGE_WIDTH / 2;
-    const startY =
-      (this.cameras.main.height - totalReelHeight) / 2 + IMAGE_HEIGHT / 2;
+    const startX = (width - totalReelWidth) / 2 + IMAGE_WIDTH / 2;
+    const startY = (height - totalReelHeight) / 2 + IMAGE_HEIGHT / 2;
 
     // Create reels.
     for (let col = 0; col < REELS_COLUMNS; col++) {
@@ -79,30 +97,25 @@ export class Game extends Phaser.Scene {
       );
       this.reels.push(reel);
     }
-
-    // Create spin button.
-    this.spinButton = this.add.image(640, 650, "spinButton").setInteractive();
-    this.spinButton.on("pointerdown", () => this.spinReels());
   }
-
   private spinReels(): void {
-    this.animateSpinButton(0,SPIN_START_DELAY);
+    this.animateSpinButton(0, 500);
 
     if (this.isSpinning) return;
 
     this.isSpinning = true;
     this.winText.setText("");
 
-    // Immediately update all images with a new random symbol.
-    this.reels.forEach((reel) => {
-      for (let row = 0; row < REELS_ROWS; row++) {
-        reel.updateSymbol(row, getRandomWeightedSymbol());
-      }
+    const randomizeEvent: Phaser.Time.TimerEvent = this.time.addEvent({
+      delay: 100,
+      callback: () => this.randomizeSymbols(),
+      loop: true,
     });
 
-    // Delay before starting the spin.
-    this.time.delayedCall(SPIN_START_DELAY, async () => {
-      const spinPromises = this.reels.map((reel, index) => {
+    this.time.delayedCall(SPIN_START_DELAY, async (): Promise<void> => {
+      randomizeEvent.remove(false);
+
+      const spinPromises: Promise<void>[] = this.reels.map((reel, index) => {
         const spinDuration = SPIN_START_DURATION + index * 300;
         const rollDistance = IMAGE_HEIGHT + V_GAP;
         return reel.spin(spinDuration, TWEEN_DURATION, rollDistance);
@@ -111,15 +124,19 @@ export class Game extends Phaser.Scene {
       await Promise.all(spinPromises);
 
       this.evaluateWin();
-
       this.isSpinning = false;
-
       this.animateSpinButton(1, 250);
     });
   }
-
+  private randomizeSymbols(): void {
+    this.reels.forEach((reel) => {
+      for (let row = 0; row < REELS_ROWS; row++) {
+        reel.updateSymbol(row, getRandomWeightedSymbol());
+      }
+    });
+  }
   private evaluateWin(): void {
-    // Gather winning symbols (middle row from each reel).
+    // Gather winning symbols from the middle row.
     const winningSymbols = this.reels.map(
       (reel) => reel.getImageAt(WINNING_ROW).texture.key
     );
@@ -143,8 +160,7 @@ export class Game extends Phaser.Scene {
       this.winText.setText("Sorry, No Win ... ");
     }
   }
-
-  private animateSpinButton(alpha: number, durationInMs: number) {
+  private animateSpinButton(alpha: number, durationInMs: number): void {
     this.tweens.add({
       targets: this.spinButton,
       alpha: alpha,
