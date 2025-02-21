@@ -77,7 +77,6 @@ export class Game extends Phaser.Scene {
     const startX = (width - totalReelWidth) / 2 + IMAGE_WIDTH / 2;
     const startY = (height - totalReelHeight) / 2 + IMAGE_HEIGHT / 2;
 
-    // Create reels.
     for (let col = 0; col < REELS_COLUMNS; col++) {
       const initialSymbols: string[] = [];
       for (let row = 0; row < REELS_ROWS; row++) {
