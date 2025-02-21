@@ -1,110 +1,77 @@
 import Phaser from "phaser";
 
 export class Game extends Phaser.Scene {
-  // List of symbols (M1–M6, H1–H6, A, Bonus, 9, 10, J, Q, K)
   private symbols = [
-    "M1",
-    "M2",
-    "M3",
-    "M4",
-    "M5",
-    "M6",
-    "H1",
-    "H2",
-    "H3",
-    "H4",
-    "H5",
-    "H6",
-    "A",
-    "Bonus",
-    "9",
-    "10",
-    "J",
-    "Q",
-    "K",
+    "M1", "M2", "M3", "M4", "M5", "M6",
+    "H1", "H2", "H3", "H4", "H5", "H6",
+    "A", "Bonus", "9", "10", "J", "Q", "K",
   ];
 
-  // Each column is an array of images.
+  // Each reel (column) is an array of 3 images.
   private reels: Phaser.GameObjects.Image[][] = [];
-  // Store each column’s initial y positions (for snapping back when stopping).
+
+  // The initial Y positions (for snapping back).
   private reelInitialYs: number[][] = [];
+
   private spinButton!: Phaser.GameObjects.Image;
   private winText!: Phaser.GameObjects.Text;
+  
   private payTable: Record<string, number> = {
-    M1: 10,
-    M2: 15,
-    M3: 20,
-    M4: 25,
-    M5: 30,
-    M6: 35,
-    H1: 10,
-    H2: 15,
-    H3: 20,
-    H4: 25,
-    H5: 30,
-    H6: 35,
-    A: 50,
-    Bonus: 100,
-    "9": 5,
-    "10": 10,
-    J: 15,
-    Q: 20,
-    K: 25,
+    M1: 10, M2: 15, M3: 20, M4: 25, M5: 30, M6: 35,
+    H1: 10, H2: 15, H3: 20, H4: 25, H5: 30, H6: 35,
+    A: 50, Bonus: 100, "9": 5, "10": 10, J: 15, Q: 20, K: 25,
   };
 
   private isSpinning = false;
 
-  // Image dimensions and spacing.
+  // Layout constants.
   private readonly IMAGE_WIDTH = 200;
   private readonly IMAGE_HEIGHT = 200;
   private readonly H_GAP = 20;
   private readonly V_GAP = 20;
+  private readonly REELS_COLUMNS = 5;
+  private readonly REELS_ROWS = 3; // exactly 3 images per column
+  // The winning row is the middle row (index 1).
+  private readonly WINNING_ROW = 1;
 
   constructor() {
-    super({ key: "Game", active: true });
+    super({ key: "GameWeighted", active: true });
   }
 
   preload() {
-    // Load background and spin button.
     this.load.image("background", "assets/bg.png");
     this.load.image("spinButton", "assets/logo.png");
     // Load both normal and connected versions for each symbol.
     this.symbols.forEach((symbol) => {
       this.load.image(symbol, `assets/symbol/${symbol}.png`);
-      this.load.image(
-        symbol + "_connect",
-        `assets/symbol-connected/${symbol}_connect.png`
-      );
+      this.load.image(symbol + "_connect", `assets/symbol-connected/${symbol}_connect.png`);
     });
   }
 
   create() {
-    // Add background.
     this.add.image(640, 360, "background");
 
-    // Create win text.
     this.winText = this.add
       .text(640, 20, "", { fontSize: "32px", color: "#FFF" })
       .setOrigin(0.5)
       .setDepth(1000);
 
-    // Calculate grid positions so the reels are centered.
-    const reelsColumns = 5;
-    const reelsRows = 3;
+    // Calculate grid positions to center the 5x3 board.
     const totalReelWidth =
-      reelsColumns * this.IMAGE_WIDTH + (reelsColumns - 1) * this.H_GAP;
+      this.REELS_COLUMNS * this.IMAGE_WIDTH + (this.REELS_COLUMNS - 1) * this.H_GAP;
     const totalReelHeight =
-      reelsRows * this.IMAGE_HEIGHT + (reelsRows - 1) * this.V_GAP;
+      this.REELS_ROWS * this.IMAGE_HEIGHT + (this.REELS_ROWS - 1) * this.V_GAP;
     const startX =
       (this.cameras.main.width - totalReelWidth) / 2 + this.IMAGE_WIDTH / 2;
     const startY =
       (this.cameras.main.height - totalReelHeight) / 2 + this.IMAGE_HEIGHT / 2;
 
-    // Create each reel (column) as an array of images.
-    for (let col = 0; col < reelsColumns; col++) {
+    // Create each column (reel) with the 3 REELS_COLUMNS images.
+    for (let col = 0; col < this.REELS_COLUMNS; col++) {
       this.reels[col] = [];
       this.reelInitialYs[col] = [];
-      for (let row = 0; row < reelsRows; row++) {
+      for (let row = 0; row < this.REELS_ROWS; row++) {
+        // Start with a random symbol.
         const symbol = this.getRandomSymbol();
         const posX = startX + col * (this.IMAGE_WIDTH + this.H_GAP);
         const posY = startY + row * (this.IMAGE_HEIGHT + this.V_GAP);
@@ -119,105 +86,103 @@ export class Game extends Phaser.Scene {
     this.spinButton.on("pointerdown", () => this.spinReels());
   }
 
+  // --- Weighted Random Selector ---
   private getRandomSymbol(): string {
-    return this.symbols[Math.floor(Math.random() * this.symbols.length)];
+    const symbolsWithWeights: { symbol: string; weight: number }[] = [
+      { symbol: "M1", weight: 5 },
+      { symbol: "M2", weight: 5 },
+      { symbol: "M3", weight: 5 },
+      { symbol: "M4", weight: 5 },
+      { symbol: "M5", weight: 5 },
+      { symbol: "M6", weight: 5 },
+      { symbol: "H1", weight: 5 },
+      { symbol: "H2", weight: 5 },
+      { symbol: "H3", weight: 5 },
+      { symbol: "H4", weight: 5 },
+      { symbol: "H5", weight: 5 },
+      { symbol: "H6", weight: 5 },
+      { symbol: "A", weight: 100 },      
+      { symbol: "Bonus", weight: 5 },   
+      { symbol: "9", weight: 5 },
+      { symbol: "10", weight: 5 },
+      { symbol: "J", weight: 5 },
+      { symbol: "Q", weight: 5 },
+      { symbol: "K", weight: 5 },
+    ];
+
+    const totalWeight = symbolsWithWeights.reduce((sum, sw) => sum + sw.weight, 0);
+    let random = Math.random() * totalWeight;
+    for (const { symbol, weight } of symbolsWithWeights) {
+      if (random < weight) {
+        return symbol;
+      }
+      random -= weight;
+    }
+    return symbolsWithWeights[0].symbol;
   }
 
-  /**
-   * Initiates the spin. For each column, a final outcome is pre‑determined,
-   * and a predetermined spin sequence is generated.
-   */
   private spinReels() {
     if (this.isSpinning) return;
     this.isSpinning = true;
     this.winText.setText("");
 
-    let reelsFinished = 0;
-    const finalSymbols: string[][] = [];
-    const spinSequences: string[][] = [];
-    const reelsColumns = 5;
-    const reelsRows = 3;
-    const tweenDuration = 100;
-    const baseSpinDuration = 2000;
-    const spinDelayIncrement = 300;
-
-    // Pre-determine final outcome and spin sequence for each column.
-    for (let col = 0; col < reelsColumns; col++) {
-      finalSymbols[col] = [];
-      spinSequences[col] = [];
-      // Pre-determine the final symbols.
-      for (let row = 0; row < reelsRows; row++) {
-        finalSymbols[col][row] = this.getRandomSymbol();
-      }
-      // Determine the number of roll iterations for this column.
-      const spinDuration = baseSpinDuration + col * spinDelayIncrement;
-      const iterations = Math.floor(spinDuration / tweenDuration);
-      // Generate a predetermined spin sequence.
-      // The sequence length should cover all roll iterations plus the initial reel length.
-      for (let i = 0; i < iterations + reelsRows; i++) {
-        spinSequences[col][i] = this.getRandomSymbol();
+    // (1) Immediately randomize all images on the board using weighted selection.
+    for (let col = 0; col < this.REELS_COLUMNS; col++) {
+      for (let row = 0; row < this.REELS_ROWS; row++) {
+        this.reels[col][row].setTexture(this.getRandomSymbol());
       }
     }
 
-    // Spin each column.
-    for (let col = 0; col < reelsColumns; col++) {
-      const spinDuration = baseSpinDuration + col * spinDelayIncrement;
-      this.spinColumnSmooth(
-        col,
-        spinDuration,
-        finalSymbols[col],
-        spinSequences[col],
-        () => {
+    // (2) Wait 1 second before starting the spin.
+    this.time.delayedCall(500, () => {
+      let reelsFinished = 0;
+      // (3) Spin each column.
+      for (let col = 0; col < this.REELS_COLUMNS; col++) {
+        // You can adjust spin duration per column if you want a staggered stop.
+        const spinDuration = 2000 + col * 300;
+        this.spinColumnSmooth(col, spinDuration, () => {
           reelsFinished++;
-          if (reelsFinished === reelsColumns) {
-            // When all reels are done, evaluate the win (using the middle row).
-            this.evaluateWin(finalSymbols);
+          if (reelsFinished === this.REELS_COLUMNS) {
+            // (5) Evaluate win after all columns have stopped.
+            this.evaluateWin();
             this.isSpinning = false;
           }
-        }
-      );
-    }
+        });
+      }
+    });
   }
-
   private spinColumnSmooth(
     col: number,
     spinDuration: number,
-    finalSymbols: string[],
-    spinSequence: string[],
     onComplete: () => void
   ) {
-    const tweenDuration = 100; // duration of one roll iteration (ms)
+    const tweenDuration = 100; // duration for each roll iteration (ms)
     const iterations = Math.floor(spinDuration / tweenDuration);
     const rollDistance = this.IMAGE_HEIGHT + this.V_GAP;
     let iterationsLeft = iterations;
-    let spinIndex = this.reels[col].length;
 
     const rollIteration = () => {
-      // Tween all images in the column upward by rollDistance.
       this.tweens.add({
         targets: this.reels[col],
+        // Animate each image upward by rollDistance.
         y: (target: Phaser.GameObjects.Image) => target.y - rollDistance,
         duration: tweenDuration,
         ease: "Linear",
         onComplete: () => {
-          // Recycle the top image to the bottom.
+          // Cycle the top image to the bottom.
           const topImage = this.reels[col].shift()!;
           const lastImage = this.reels[col][this.reels[col].length - 1];
           topImage.y = lastImage.y + rollDistance;
-          // Use the predetermined spin sequence.
-          topImage.setTexture(spinSequence[spinIndex]);
-          spinIndex++;
           this.reels[col].push(topImage);
 
           iterationsLeft--;
           if (iterationsLeft > 0) {
             rollIteration();
           } else {
-            // Once spinning is done, reset positions and apply final textures.
+            // When done, sort images by their y positions and snap them back.
             this.reels[col].sort((a, b) => a.y - b.y);
             let tweensCompleted = 0;
             this.reels[col].forEach((image, index) => {
-              image.setTexture(finalSymbols[index]);
               this.tweens.add({
                 targets: image,
                 y: this.reelInitialYs[col][index],
@@ -239,29 +204,34 @@ export class Game extends Phaser.Scene {
     rollIteration();
   }
 
-  private evaluateWin(finalSymbols: string[][]) {
-    const winningRow = 1;
-    const winningSymbol = finalSymbols[0][winningRow];
+  private evaluateWin() {
+    const winningSymbols: string[] = [];
+    for (let col = 0; col < this.REELS_COLUMNS; col++) {
+      // Ensure images are sorted by their Y position.
+      this.reels[col].sort((a, b) => a.y - b.y);
+      winningSymbols.push(this.reels[col][this.WINNING_ROW].texture.key);
+    }
+    // Check for three or more consecutive columns (from left) with the same symbol.
+    const winningSymbol = winningSymbols[0];
     let matchCount = 1;
-    for (let col = 1; col < 5; col++) {
-      if (finalSymbols[col][winningRow] === winningSymbol) {
+    for (let col = 1; col < this.REELS_COLUMNS; col++) {
+      if (winningSymbols[col] === winningSymbol) {
         matchCount++;
       } else {
         break;
       }
     }
-
-    let payout = 0;
     if (matchCount >= 3 && this.payTable[winningSymbol]) {
-      payout = this.payTable[winningSymbol];
-      // For winning columns, change the middle cell to its connected version.
+      // Optionally, change the winning images to their connected version.
       for (let col = 0; col < matchCount; col++) {
-        this.reels[col].sort((a, b) => a.y - b.y);
-        this.reels[col][winningRow].setTexture(winningSymbol + "_connect");
+        this.reels[col]
+          .sort((a, b) => a.y - b.y)[this.WINNING_ROW]
+          .setTexture(winningSymbol + "_connect");
       }
-    }
-    if (payout > 0) {
+      const payout = this.payTable[winningSymbol];
       this.winText.setText(`Win: ${payout}`);
+    } else {
+      this.winText.setText("No Win");
     }
   }
 }
