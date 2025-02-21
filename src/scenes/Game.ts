@@ -1,8 +1,23 @@
 import { Reel } from "./components/Reel";
 import Phaser from "phaser";
-import { getRandomWeightedSymbol, H_GAP, IMAGE_HEIGHT, IMAGE_WIDTH, MINIMUM_WIN_AMOUNT, PAY_TABLE, REELS_COLUMNS, REELS_ROWS, SYMBOLS, V_GAP, WINNING_ROW } from "./helpers";
-export class Game extends Phaser.Scene {
+import {
+  getRandomWeightedSymbol,
+  H_GAP,
+  IMAGE_HEIGHT,
+  IMAGE_WIDTH,
+  MINIMUM_WIN_AMOUNT,
+  PAY_TABLE,
+  REELS_COLUMNS,
+  REELS_ROWS,
+  SPIN_START_DELAY,
+  SPIN_START_DURATION,
+  SYMBOLS,
+  TWEEN_DURATION as TWEEN_DURATION,
+  V_GAP,
+  WINNING_ROW,
+} from "./helpers";
 
+export class Game extends Phaser.Scene {
   private reels: Reel[] = [];
   private spinButton!: Phaser.GameObjects.Image;
   private winText!: Phaser.GameObjects.Text;
@@ -26,16 +41,17 @@ export class Game extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(640, 360, "background");
+    const { width, height } = this.cameras.main;
+    const background = this.add.image(width / 2, height / 2, "background");
+    background.setDisplaySize(width, height);
+
     this.winText = this.add
-      .text(640, 20, "", { fontSize: "32px", color: "#FFF" })
+      .text(width / 2, 20, "", { fontSize: "32px", color: "#FFF" })
       .setOrigin(0.5)
       .setDepth(1000);
 
-    // Calculate grid layout to center the board.
     const totalReelWidth =
-      REELS_COLUMNS * IMAGE_WIDTH +
-      (REELS_COLUMNS - 1) * H_GAP;
+      REELS_COLUMNS * IMAGE_WIDTH + (REELS_COLUMNS - 1) * H_GAP;
     const totalReelHeight =
       REELS_ROWS * IMAGE_HEIGHT + (REELS_ROWS - 1) * V_GAP;
     const startX =
@@ -46,7 +62,7 @@ export class Game extends Phaser.Scene {
     // Create reels.
     for (let col = 0; col < REELS_COLUMNS; col++) {
       const initialSymbols: string[] = [];
-      for (let row = 0; row <REELS_ROWS; row++) {
+      for (let row = 0; row < REELS_ROWS; row++) {
         initialSymbols.push(getRandomWeightedSymbol());
       }
       const reelX = startX + col * (IMAGE_WIDTH + H_GAP);
@@ -69,10 +85,11 @@ export class Game extends Phaser.Scene {
     this.spinButton.on("pointerdown", () => this.spinReels());
   }
 
-
-
   private spinReels(): void {
+    this.animateSpinButton(0,SPIN_START_DELAY);
+
     if (this.isSpinning) return;
+
     this.isSpinning = true;
     this.winText.setText("");
 
@@ -84,18 +101,20 @@ export class Game extends Phaser.Scene {
     });
 
     // Delay before starting the spin.
-    this.time.delayedCall(500, async () => {
-      // Spin each reel with a staggered duration.
+    this.time.delayedCall(SPIN_START_DELAY, async () => {
       const spinPromises = this.reels.map((reel, index) => {
-        const spinDuration = 2000 + index * 300;
-        const tweenDuration = 100;
+        const spinDuration = SPIN_START_DURATION + index * 300;
         const rollDistance = IMAGE_HEIGHT + V_GAP;
-        return reel.spin(spinDuration, tweenDuration, rollDistance);
+        return reel.spin(spinDuration, TWEEN_DURATION, rollDistance);
       });
+
       await Promise.all(spinPromises);
 
       this.evaluateWin();
+
       this.isSpinning = false;
+
+      this.animateSpinButton(1, 250);
     });
   }
 
@@ -115,14 +134,22 @@ export class Game extends Phaser.Scene {
     }
 
     if (matchCount >= MINIMUM_WIN_AMOUNT && PAY_TABLE[firstSymbol]) {
-      // Change winning images to their connected version.
       for (let i = 0; i < matchCount; i++) {
         this.reels[i].setImageAt(WINNING_ROW, firstSymbol + "_connect");
       }
       const payout = PAY_TABLE[firstSymbol];
-      this.winText.setText(`You Win: ${payout}!`);
+      this.winText.setText(`You Win: ${payout} Coins!`);
     } else {
       this.winText.setText("Sorry, No Win ... ");
     }
+  }
+
+  private animateSpinButton(alpha: number, durationInMs: number) {
+    this.tweens.add({
+      targets: this.spinButton,
+      alpha: alpha,
+      duration: durationInMs,
+      ease: "Cubic.easeIn",
+    });
   }
 }

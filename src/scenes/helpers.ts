@@ -1,11 +1,18 @@
 export const IMAGE_WIDTH = 200;
 export const IMAGE_HEIGHT = 200;
-export const H_GAP = 20;
-export const V_GAP = 20;
+
+export const H_GAP = 10;
+export const V_GAP = 10;
+
 export const REELS_COLUMNS = 5;
 export const REELS_ROWS = 3;
+
 export const WINNING_ROW = 1;
+
 export const MINIMUM_WIN_AMOUNT = 3;
+export const SPIN_START_DELAY = 500;
+export const TWEEN_DURATION = 100;
+export const SPIN_START_DURATION = 2000;
 
 export const SYMBOLS = [
   "M1",
