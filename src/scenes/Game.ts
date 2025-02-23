@@ -27,11 +27,12 @@ export class Game extends Phaser.Scene {
     super({ key: "Game", active: true });
   }
 
-  preload() {
+  public preload(): void {
     this.load.image("background", "assets/bg.png");
     this.load.image("spinButton", "assets/SpinButton_01.png");
     this.load.image("spinButtonPressed", "assets/SpinButton_01_Pressed.png");
 
+    
     SYMBOLS.forEach((symbol) => {
       this.load.image(symbol, `assets/symbol/${symbol}.png`);
       this.load.image(
@@ -40,7 +41,7 @@ export class Game extends Phaser.Scene {
       );
     });
   }
-  create() {
+  public create(): void {
     const { width, height } = this.cameras.main;
 
     const background = this.add.image(width / 2, height / 2, "background");
@@ -49,54 +50,7 @@ export class Game extends Phaser.Scene {
     this.createReels(width, height);
     this.createUiElements(width, height);
   }
-  private createUiElements(width: number, height: number) {
-    this.winText = this.add
-      .text(width / 2, 20, "", { fontSize: "48px", color: "#000" })
-      .setOrigin(0.5)
-      .setDepth(1000);
 
-    this.spinButton = this.add
-      .image(width / 2, height / 2, "spinButton")
-      .setInteractive({ useHandCursor: true })
-      .on("pointerdown", () => {
-        this.spinButton.setTexture("spinButtonPressed");
-      })
-      .on("pointerup", () => {
-        this.spinButton.setTexture("spinButton");
-        this.spinReels();
-      })
-      .on("pointerout", () => {
-        this.spinButton.setTexture("spinButton");
-      });
-  }
-  private createReels(width: number, height: number) {
-    const totalReelWidth =
-      REELS_COLUMNS * IMAGE_WIDTH + (REELS_COLUMNS - 1) * H_GAP;
-    const totalReelHeight =
-      REELS_ROWS * IMAGE_HEIGHT + (REELS_ROWS - 1) * V_GAP;
-    const startX = (width - totalReelWidth) / 2 + IMAGE_WIDTH / 2;
-    const startY = (height - totalReelHeight) / 2 + IMAGE_HEIGHT / 2;
-
-    for (let col = 0; col < REELS_COLUMNS; col++) {
-      const initialSymbols: string[] = [];
-      for (let row = 0; row < REELS_ROWS; row++) {
-        initialSymbols.push(getRandomWeightedSymbol());
-      }
-      const reelX = startX + col * (IMAGE_WIDTH + H_GAP);
-      const reel = new Reel(
-        this,
-        col,
-        reelX,
-        startY,
-        IMAGE_WIDTH,
-        IMAGE_HEIGHT,
-        V_GAP,
-        REELS_ROWS,
-        initialSymbols
-      );
-      this.reels.push(reel);
-    }
-  }
   private spinReels(): void {
     this.animateSpinButton(0, 500);
 
@@ -123,9 +77,62 @@ export class Game extends Phaser.Scene {
       await Promise.all(spinPromises);
 
       this.evaluateWin();
+
       this.isSpinning = false;
       this.animateSpinButton(1, 250);
     });
+  }
+  private createUiElements(width: number, height: number): void {
+    this.winText = this.add
+      .text(width / 2, 25, "", {
+        fontSize: "48px",
+        fontStyle: "bold",
+        color: "#000",
+      })
+      .setOrigin(0.5)
+      .setDepth(1000);
+
+    this.spinButton = this.add
+      .image(width / 2, height / 2, "spinButton")
+      .setInteractive({ useHandCursor: true })
+      .on("pointerdown", () => {
+        this.spinButton.setTexture("spinButtonPressed");
+      })
+      .on("pointerup", () => {
+        this.spinButton.setTexture("spinButton");
+        this.spinReels();
+      })
+      .on("pointerout", () => {
+        this.spinButton.setTexture("spinButton");
+      });
+  }
+  private createReels(width: number, height: number): void {
+    const totalReelWidth =
+      REELS_COLUMNS * IMAGE_WIDTH + (REELS_COLUMNS - 1) * H_GAP;
+    const totalReelHeight =
+      REELS_ROWS * IMAGE_HEIGHT + (REELS_ROWS - 1) * V_GAP;
+    const startX = (width - totalReelWidth) / 2 + IMAGE_WIDTH / 2;
+    const startY = (height - totalReelHeight) / 2 + IMAGE_HEIGHT / 2;
+
+    for (let col = 0; col < REELS_COLUMNS; col++) {
+      const initialSymbols: string[] = [];
+      for (let row = 0; row < REELS_ROWS; row++) {
+        initialSymbols.push(getRandomWeightedSymbol());
+      }
+      const reelX = startX + col * (IMAGE_WIDTH + H_GAP);
+      const reel = new Reel(
+        this,
+        col,
+        reelX,
+        startY,
+        IMAGE_WIDTH,
+        IMAGE_HEIGHT,
+        V_GAP,
+        REELS_ROWS,
+        initialSymbols
+      );
+      this.reels.push(reel);
+    }
   }
   private randomizeSymbols(): void {
     this.reels.forEach((reel) => {
@@ -154,9 +161,9 @@ export class Game extends Phaser.Scene {
         this.reels[i].setImageAt(WINNING_ROW, firstSymbol + "_connect");
       }
       const payout = PAY_TABLE[firstSymbol];
-      this.winText.setText(`You Win: ${payout} Coins!`);
+      this.winText.setText(`You Win: ${payout} Coins! :D`);
     } else {
-      this.winText.setText("Sorry, No Win ... ");
+      this.winText.setText("Sorry, No Win. :(");
     }
   }
   private animateSpinButton(alpha: number, durationInMs: number): void {

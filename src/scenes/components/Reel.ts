@@ -1,4 +1,3 @@
-
 export class Reel {
   private images: Phaser.GameObjects.Image[] = [];
   private initialYs: number[] = [];
@@ -17,7 +16,9 @@ export class Reel {
     for (let row = 0; row < rowCount; row++) {
       const symbol = initialSymbols[row];
       const y = startY + row * (this.imageHeight + this.vGap);
-      const img = this.scene.add.image(this.x, y, symbol);
+      const img = this.scene.add
+        .image(this.x, y, symbol)
+        .setDisplaySize(this.imageWidth, this.imageHeight);
       this.images.push(img);
       this.initialYs.push(y);
     }
@@ -27,7 +28,11 @@ export class Reel {
    * Spins this reel with a smooth rolling animation.
    * Returns a promise that resolves when the reel finishes spinning.
    */
-  public spin(spinDuration: number, tweenDuration: number, rollDistance: number): Promise<void> {
+  public spin(
+    spinDuration: number,
+    tweenDuration: number,
+    rollDistance: number
+  ): Promise<void> {
     return new Promise((resolve) => {
       let iterations = Math.floor(spinDuration / tweenDuration);
 
@@ -75,18 +80,12 @@ export class Reel {
     });
   }
 
-  /**
-   * Update the symbol for the given row in this reel.
-   */
   public updateSymbol(rowIndex: number, symbol: string) {
     if (rowIndex < this.images.length) {
       this.images[rowIndex].setTexture(symbol);
     }
   }
 
-  /**
-   * Replace the symbol at the given row with a new texture (useful for win effects).
-   */
   public setImageAt(rowIndex: number, texture: string) {
     this.images.sort((a, b) => a.y - b.y);
     if (rowIndex < this.images.length) {
@@ -94,9 +93,6 @@ export class Reel {
     }
   }
 
-  /**
-   * Get the image object at the specified row.
-   */
   public getImageAt(rowIndex: number): Phaser.GameObjects.Image {
     this.images.sort((a, b) => a.y - b.y);
     return this.images[rowIndex];

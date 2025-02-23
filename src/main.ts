@@ -6,7 +6,7 @@ const config: Types.Core.GameConfig = {
     width: window.innerWidth,
     height: window.innerHeight,
     scale: {
-        mode: Scale.RESIZE,      // Automatically resizes to fit the screen
+        mode: Scale.RESIZE,     
         autoCenter: Scale.CENTER_BOTH
     },
     scene: [
