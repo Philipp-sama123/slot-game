@@ -24,10 +24,6 @@ export class Reel {
     }
   }
 
-  /**
-   * Spins this reel with a smooth rolling animation.
-   * Returns a promise that resolves when the reel finishes spinning.
-   */
   public spin(
     spinDuration: number,
     tweenDuration: number,

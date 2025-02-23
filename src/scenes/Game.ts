@@ -9,6 +9,8 @@ import {
   PAY_TABLE,
   REELS_COLUMNS,
   REELS_ROWS,
+  SPIN_BUTTON_HEIGHT,
+  SPIN_BUTTON_WIDTH,
   SPIN_START_DELAY,
   SPIN_START_DURATION,
   SYMBOLS,
@@ -84,7 +86,7 @@ export class Game extends Phaser.Scene {
   }
   private createUiElements(width: number, height: number): void {
     this.winText = this.add
-      .text(width / 2, 25, "", {
+      .text(width / 2, 50, "", {
         fontSize: "48px",
         fontStyle: "bold",
         color: "#000",
@@ -93,7 +95,7 @@ export class Game extends Phaser.Scene {
       .setDepth(1000);
 
     this.spinButton = this.add
-      .image(width / 2, height / 2, "spinButton")
+      .image(width / 2, height-SPIN_BUTTON_HEIGHT, "spinButton").setDisplaySize(SPIN_BUTTON_WIDTH,SPIN_BUTTON_HEIGHT)
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => {
         this.spinButton.setTexture("spinButtonPressed");
