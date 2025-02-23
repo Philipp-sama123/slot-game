@@ -51,7 +51,7 @@ export class Game extends Phaser.Scene {
   }
   private createUiElements(width: number, height: number) {
     this.winText = this.add
-      .text(width / 2, 20, "", { fontSize: "48px", color: "#FFF" })
+      .text(width / 2, 20, "", { fontSize: "48px", color: "#000" })
       .setOrigin(0.5)
       .setDepth(1000);
 
