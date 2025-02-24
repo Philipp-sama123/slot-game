@@ -1,7 +1,7 @@
 export const IMAGE_WIDTH = 200;
 export const IMAGE_HEIGHT = 200;
-export const SPIN_BUTTON_HEIGHT = 110;
-export const SPIN_BUTTON_WIDTH = 240;
+export const SPIN_BUTTON_HEIGHT = 220;
+export const SPIN_BUTTON_WIDTH = 480;
 
 export const H_GAP = 10;
 export const V_GAP = 10;
