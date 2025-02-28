@@ -61,9 +61,18 @@ export class Game extends Phaser.Scene {
     this.isSpinning = true;
     this.winText.setText("");
 
+    let randomizationCount = 0;
     const randomizeEvent: Phaser.Time.TimerEvent = this.time.addEvent({
       delay: 100,
-      callback: () => this.randomizeSymbols(),
+      callback: () => {
+        randomizationCount++;
+        // On the last randomization before spin, use the special logic
+        if (randomizationCount * 100 >= SPIN_START_DELAY - 100) {
+          this.lastRandomizeBeforeSpin();
+        } else {
+          this.randomizeSymbols();
+        }
+      },
       loop: true,
     });
 
@@ -137,11 +146,32 @@ export class Game extends Phaser.Scene {
     }
   }
   private randomizeSymbols(): void {
+    // Completely random symbols for all reels
     this.reels.forEach((reel) => {
       for (let row = 0; row < REELS_ROWS; row++) {
         reel.updateSymbol(row, getRandomWeightedSymbol());
       }
     });
+  }
+
+  private lastRandomizeBeforeSpin(): void {
+    // First randomize the first column
+    for (let row = 0; row < REELS_ROWS; row++) {
+      this.reels[0].updateSymbol(row, getRandomWeightedSymbol());
+    }
+
+    // Get the symbols that were randomly selected in the first column
+    const firstColumnSymbols = Array.from({length: REELS_ROWS}, (_, row) => 
+      this.reels[0].getImageAt(row).texture.key
+    );
+
+    // Now influence other columns based on the first column's symbols
+    for (let reelIndex = 1; reelIndex < REELS_COLUMNS; reelIndex++) {
+      for (let row = 0; row < REELS_ROWS; row++) {
+        // Higher chance (40%) to match the symbol from the first column
+        this.reels[reelIndex].updateSymbol(row, getRandomWeightedSymbol(firstColumnSymbols[row]));
+      }
+    }
   }
   private evaluateWin(): void {
     // Gather winning symbols from the middle row.

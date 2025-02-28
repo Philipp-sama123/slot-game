@@ -63,28 +63,33 @@ export const PAY_TABLE: Record<string, number> = {
 };
 
 export const WEIGHTED_SYMBOLS: { symbol: string; weight: number }[] = [
-  { symbol: "M1", weight: 100 },
-  { symbol: "M2", weight: 5 },
-  { symbol: "M3", weight: 5 },
-  { symbol: "M4", weight: 5 },
-  { symbol: "M5", weight: 5 },
-  { symbol: "M6", weight: 5 },
-  { symbol: "H1", weight: 5 },
-  { symbol: "H2", weight: 5 },
-  { symbol: "H3", weight: 100 },
-  { symbol: "H4", weight: 5 },
-  { symbol: "H5", weight: 5 },
-  { symbol: "H6", weight: 5 },
-  { symbol: "A", weight: 100 },
-  { symbol: "Bonus", weight: 5 },
-  { symbol: "9", weight: 5 },
-  { symbol: "10", weight: 5 },
-  { symbol: "J", weight: 5 },
-  { symbol: "Q", weight: 5 },
-  { symbol: "K", weight: 5 },
+  { symbol: "M1", weight: 80 },
+  { symbol: "M2", weight: 70 },
+  { symbol: "M3", weight: 60 },
+  { symbol: "M4", weight: 50 },
+  { symbol: "M5", weight: 40 },
+  { symbol: "M6", weight: 30 },
+  { symbol: "H1", weight: 70 },
+  { symbol: "H2", weight: 60 },
+  { symbol: "H3", weight: 80 },
+  { symbol: "H4", weight: 50 },
+  { symbol: "H5", weight: 40 },
+  { symbol: "H6", weight: 30 },
+  { symbol: "A", weight: 40 },
+  { symbol: "Bonus", weight: 20 },
+  { symbol: "9", weight: 90 },
+  { symbol: "10", weight: 80 },
+  { symbol: "J", weight: 70 },
+  { symbol: "Q", weight: 60 },
+  { symbol: "K", weight: 50 },
 ];
 
-export function getRandomWeightedSymbol(): string {
+export function getRandomWeightedSymbol(preferredSymbol?: string): string {
+  // If we have a preferred symbol, 40% chance to return it
+  if (preferredSymbol && Math.random() < 0.4) {
+    return preferredSymbol;
+  }
+
   const totalWeight = WEIGHTED_SYMBOLS.reduce((sum, sw) => sum + sw.weight, 0);
   let random = Math.random() * totalWeight;
   for (const { symbol, weight } of WEIGHTED_SYMBOLS) {
