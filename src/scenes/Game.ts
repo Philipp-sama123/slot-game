@@ -34,7 +34,10 @@ export class Game extends Phaser.Scene {
     this.load.image("spinButton", "assets/SpinButton_01.png");
     this.load.image("spinButtonPressed", "assets/SpinButton_01_Pressed.png");
 
-    
+    // Preload sound assets
+    this.load.audio("spinSound", "assets/sounds/spin.wav");
+    this.load.audio("stopSound", "assets/sounds/win.wav");
+
     SYMBOLS.forEach((symbol) => {
       this.load.image(symbol, `assets/symbol/${symbol}.png`);
       this.load.image(
@@ -43,6 +46,7 @@ export class Game extends Phaser.Scene {
       );
     });
   }
+
   public create(): void {
     const { width, height } = this.cameras.main;
 
@@ -51,6 +55,8 @@ export class Game extends Phaser.Scene {
 
     this.createReels(width, height);
     this.createUiElements(width, height);
+
+    
   }
 
   private spinReels(): void {
@@ -61,12 +67,16 @@ export class Game extends Phaser.Scene {
     this.isSpinning = true;
     this.winText.setText("");
 
+    // Start playing the spin sound in a loop.
+    const spinSound = this.sound.add("spinSound", { loop: true });
+    spinSound.play();
+
     let randomizationCount = 0;
     const randomizeEvent: Phaser.Time.TimerEvent = this.time.addEvent({
       delay: 100,
       callback: () => {
         randomizationCount++;
-        // On the last randomization before spin, use the special logic
+        // On the last randomization before spin, use the special logic.
         if (randomizationCount * 100 >= SPIN_START_DELAY - 100) {
           this.lastRandomizeBeforeSpin();
         } else {
@@ -87,12 +97,17 @@ export class Game extends Phaser.Scene {
 
       await Promise.all(spinPromises);
 
+      // Stop the spin sound and play the stop sound.
+      spinSound.stop();
+      this.sound.play("stopSound");
+
       this.evaluateWin();
 
       this.isSpinning = false;
       this.animateSpinButton(1, 250);
     });
   }
+
   private createUiElements(width: number, height: number): void {
     this.winText = this.add
       .text(width / 2, 50, "", {
@@ -104,7 +119,8 @@ export class Game extends Phaser.Scene {
       .setDepth(1000);
 
     this.spinButton = this.add
-      .image(width / 2, height-SPIN_BUTTON_HEIGHT, "spinButton").setDisplaySize(SPIN_BUTTON_WIDTH,SPIN_BUTTON_HEIGHT)
+      .image(width / 2, height - SPIN_BUTTON_HEIGHT, "spinButton")
+      .setDisplaySize(SPIN_BUTTON_WIDTH, SPIN_BUTTON_HEIGHT)
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => {
         this.spinButton.setTexture("spinButtonPressed");
@@ -117,6 +133,7 @@ export class Game extends Phaser.Scene {
         this.spinButton.setTexture("spinButton");
       });
   }
+
   private createReels(width: number, height: number): void {
     const totalReelWidth =
       REELS_COLUMNS * IMAGE_WIDTH + (REELS_COLUMNS - 1) * H_GAP;
@@ -145,8 +162,9 @@ export class Game extends Phaser.Scene {
       this.reels.push(reel);
     }
   }
+
   private randomizeSymbols(): void {
-    // Completely random symbols for all reels
+    // Completely random symbols for all reels.
     this.reels.forEach((reel) => {
       for (let row = 0; row < REELS_ROWS; row++) {
         reel.updateSymbol(row, getRandomWeightedSymbol());
@@ -155,24 +173,28 @@ export class Game extends Phaser.Scene {
   }
 
   private lastRandomizeBeforeSpin(): void {
-    // First randomize the first column
+    // First randomize the first column.
     for (let row = 0; row < REELS_ROWS; row++) {
       this.reels[0].updateSymbol(row, getRandomWeightedSymbol());
     }
 
-    // Get the symbols that were randomly selected in the first column
-    const firstColumnSymbols = Array.from({length: REELS_ROWS}, (_, row) => 
+    // Get the symbols that were randomly selected in the first column.
+    const firstColumnSymbols = Array.from({ length: REELS_ROWS }, (_, row) =>
       this.reels[0].getImageAt(row).texture.key
     );
 
-    // Now influence other columns based on the first column's symbols
+    // Now influence other columns based on the first column's symbols.
     for (let reelIndex = 1; reelIndex < REELS_COLUMNS; reelIndex++) {
       for (let row = 0; row < REELS_ROWS; row++) {
-        // Higher chance (40%) to match the symbol from the first column
-        this.reels[reelIndex].updateSymbol(row, getRandomWeightedSymbol(firstColumnSymbols[row]));
+        // Higher chance (40%) to match the symbol from the first column.
+        this.reels[reelIndex].updateSymbol(
+          row,
+          getRandomWeightedSymbol(firstColumnSymbols[row])
+        );
       }
     }
   }
+
   private evaluateWin(): void {
     // Gather winning symbols from the middle row.
     const winningSymbols = this.reels.map(
@@ -198,6 +220,7 @@ export class Game extends Phaser.Scene {
       this.winText.setText("Sorry, No Win. :(");
     }
   }
+
   private animateSpinButton(alpha: number, durationInMs: number): void {
     this.tweens.add({
       targets: this.spinButton,
