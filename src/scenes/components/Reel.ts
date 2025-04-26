@@ -1,24 +1,37 @@
+import Phaser from "phaser";
+
 export class Reel {
   private images: Phaser.GameObjects.Image[] = [];
   private initialYs: number[] = [];
+  private x: number;
+  private imageWidth: number;
+  private imageHeight: number;
+  private vGap: number;
+  private rowCount: number;
 
   constructor(
     private scene: Phaser.Scene,
     private colIndex: number,
-    private x: number,
+    x: number,
     startY: number,
-    private imageWidth: number,
-    private imageHeight: number,
-    private vGap: number,
-    private rowCount: number,
+    imageWidth: number,
+    imageHeight: number,
+    vGap: number,
+    rowCount: number,
     initialSymbols: string[]
   ) {
+    this.x = x;
+    this.imageWidth = imageWidth;
+    this.imageHeight = imageHeight;
+    this.vGap = vGap;
+    this.rowCount = rowCount;
+
     for (let row = 0; row < rowCount; row++) {
       const symbol = initialSymbols[row];
-      const y = startY + row * (this.imageHeight + this.vGap);
+      const y = startY + row * (imageHeight + vGap);
       const img = this.scene.add
-        .image(this.x, y, symbol)
-        .setDisplaySize(this.imageWidth, this.imageHeight);
+        .image(x, y, symbol)
+        .setDisplaySize(imageWidth, imageHeight);
       this.images.push(img);
       this.initialYs.push(y);
     }
@@ -31,66 +44,69 @@ export class Reel {
   ): Promise<void> {
     return new Promise((resolve) => {
       let iterations = Math.floor(spinDuration / tweenDuration);
-
-      const rollIteration = () => {
+      const roll = () => {
         if (iterations <= 0) {
-          // Final snap: sort images by y and tween back to initial positions.
           this.images.sort((a, b) => a.y - b.y);
-          let completed = 0;
-          this.images.forEach((img, index) => {
+          let done = 0;
+          this.images.forEach((img, i) => {
             this.scene.tweens.add({
               targets: img,
-              y: this.initialYs[index],
+              y: this.initialYs[i],
               duration: tweenDuration,
               ease: "Linear",
               onComplete: () => {
-                completed++;
-                if (completed === this.images.length) {
-                  resolve();
-                }
+                if (++done === this.images.length) resolve();
               },
             });
           });
           return;
         }
-
-        // Tween all images upward.
         this.scene.tweens.add({
           targets: this.images,
-          y: (target: Phaser.GameObjects.Image) => target.y - rollDistance,
+          y: (t: Phaser.GameObjects.Image) => t.y - rollDistance,
           duration: tweenDuration,
           ease: "Linear",
           onComplete: () => {
-            // Cycle the top image to the bottom.
-            const topImage = this.images.shift()!;
-            const lastImage = this.images[this.images.length - 1];
-            topImage.y = lastImage.y + rollDistance;
-            this.images.push(topImage);
+            const top = this.images.shift()!;
+            const last = this.images[this.images.length - 1];
+            top.y = last.y + rollDistance;
+            this.images.push(top);
             iterations--;
-            rollIteration();
+            roll();
           },
         });
       };
-
-      rollIteration();
+      roll();
     });
   }
 
-  public updateSymbol(rowIndex: number, symbol: string) {
-    if (rowIndex < this.images.length) {
-      this.images[rowIndex].setTexture(symbol);
+  public updateSymbol(row: number, symbol: string) {
+    this.images.sort((a, b) => a.y - b.y);
+    if (row < this.images.length) this.images[row].setTexture(symbol);
+  }
+
+  public getImageAt(row: number) {
+    this.images.sort((a, b) => a.y - b.y);
+    return this.images[row];
+  }
+
+  public resize(w: number, h: number, gap: number) {
+    this.imageWidth = w;
+    this.imageHeight = h;
+    this.vGap = gap;
+    this.images.forEach((img) => img.setDisplaySize(w, h));
+  }
+
+  public reposition(nx: number, startY: number) {
+    this.x = nx;
+    for (let i = 0; i < this.images.length; i++) {
+      const img = this.images[i];
+      img.setPosition(nx, startY + i * (this.imageHeight + this.vGap));
+      this.initialYs[i] = img.y;
     }
   }
 
-  public setImageAt(rowIndex: number, texture: string) {
-    this.images.sort((a, b) => a.y - b.y);
-    if (rowIndex < this.images.length) {
-      this.images[rowIndex].setTexture(texture);
-    }
-  }
-
-  public getImageAt(rowIndex: number): Phaser.GameObjects.Image {
-    this.images.sort((a, b) => a.y - b.y);
-    return this.images[rowIndex];
+  public getStepSize() {
+    return this.imageHeight + this.vGap;
   }
 }
