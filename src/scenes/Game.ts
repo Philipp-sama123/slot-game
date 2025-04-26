@@ -65,7 +65,7 @@ export class Game extends Phaser.Scene {
     this.createReels(width, height);
     this.createUiElements(width, height);
     this.repositionReels(width, height);
-
+    this.repositionSpinButton(width, height);
     this.scale.on("resize", this.onResize, this);
   }
 
@@ -74,8 +74,20 @@ export class Game extends Phaser.Scene {
     this.background
       .setPosition(width / 2, height / 2)
       .setDisplaySize(width, height);
+
     this.coinsText.setPosition(20, 20);
     this.repositionReels(width, height);
+
+    // ADD THIS to reposition spin button:
+    this.repositionSpinButton(width, height);
+  }
+  private repositionSpinButton(width: number, height: number) {
+    this.spinButton
+      .setPosition(width / 2, height / 2)
+      .setDisplaySize(
+        SPIN_BUTTON_WIDTH * this.currentScale,
+        SPIN_BUTTON_HEIGHT * this.currentScale
+      );
   }
 
   private repositionReels(width: number, height: number) {
@@ -100,11 +112,6 @@ export class Game extends Phaser.Scene {
     // position winText above reels
     const winY = startY - h / 2 - 10;
     this.winText.setPosition(width / 2, winY);
-
-    // resize & place spin button
-    this.spinButton
-      .setDisplaySize(SPIN_BUTTON_WIDTH * scale, SPIN_BUTTON_HEIGHT * scale)
-      .setPosition(width / 2, height - (SPIN_BUTTON_HEIGHT * scale) / 2);
 
     // update reels
     this.reels.forEach((r, i) => {
